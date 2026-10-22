@@ -8,13 +8,10 @@ import { TransactionModule } from './transaction/transaction.module.js';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres', 
-      password: '1234', 
-      database: 'finance_tracker', 
+      url: 'postgresql://neondb_owner:npg_HKqji4A8QmDa@ep-falling-queen-azvxbw83-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+      ssl: true,
       autoLoadEntities: true,
-      synchronize: true, 
+      synchronize: true, // এটি লাইভ ডাটাবেসে স্বয়ংক্রিয়ভাবে টেবিল তৈরি করে দেবে
     }),
     TransactionModule,
   ],
