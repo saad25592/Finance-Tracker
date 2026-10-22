@@ -9,9 +9,11 @@ import { TransactionModule } from './transaction/transaction.module.js';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: 'postgresql://neondb_owner:npg_HKqji4A8QmDa@ep-falling-queen-azvxbw83-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
-      ssl: true,
+      ssl: {
+        rejectUnauthorized: false,
+      },
       autoLoadEntities: true,
-      synchronize: true, // এটি লাইভ ডাটাবেসে স্বয়ংক্রিয়ভাবে টেবিল তৈরি করে দেবে
+      synchronize: true,
     }),
     TransactionModule,
   ],
