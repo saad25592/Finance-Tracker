@@ -1,31 +1,40 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import './App.css';
+import Login from './components/Auth/Login';
+import Signup from './components/Auth/Signup';
 
-const API_URL = 'http://localhost:3000/transaction'
-const GENERAL_EXPENSE = 'General Expense'
+// টোকেন পাঠানোর জন্য Axios Interceptor
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-function App() {
-  const [transactions, setTransactions] = useState([])
-  const [formData, setFormData] = useState({ title: '', amount: '', type: 'expense', source: 'Personal', date: '' })
+const API_URL = 'https://saadspace.top/finacetracker-api/transaction';
+const GENERAL_EXPENSE = 'General Expense';
+
+function Dashboard() {
+  const navigate = useNavigate();
+  
+  const [transactions, setTransactions] = useState([]);
+  const [formData, setFormData] = useState({ title: '', amount: '', type: 'expense', source: 'Personal', date: '' });
   
   const [budget, setBudget] = useState(() => {
     const savedBudget = localStorage.getItem('personalBudget');
     return savedBudget ? Number(savedBudget) : 35000;
   });
   
-  const [alertShown, setAlertShown] = useState({ eighty: false, hundred: false })
-  const [activeTab, setActiveTab] = useState('personal')
+  const [alertShown, setAlertShown] = useState({ eighty: false, hundred: false });
+  const [activeTab, setActiveTab] = useState('personal');
 
-  const [bizRecordType, setBizRecordType] = useState('Profit')
+  const [bizRecordType, setBizRecordType] = useState('Profit');
 
-  const defaultInvestments = {
-    "Import & Export Trading": 150000,
-    "Motorcycle Rental Service": 30000,
-    "Tobacco Products Trading": 20000,
-    "Shrimp Trading & Supply": 30000,
-    "Grocery & General Store": 50000
-  };
+  // নতুন ইউজারদের জন্য ডিফল্ট ইনভেস্টমেন্ট ফাঁকা রাখা হলো
+  const defaultInvestments = {};
 
   const [fixedInvestments, setFixedInvestments] = useState(() => {
     const saved = localStorage.getItem('businessInvestments');
@@ -40,6 +49,14 @@ function App() {
   const [showAddBiz, setShowAddBiz] = useState(false);
   const [newBizName, setNewBizName] = useState('');
   const [newBizInvest, setNewBizInvest] = useState('');
+
+  // লগিন চেক
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   useEffect(() => {
     localStorage.setItem('personalBudget', budget);
@@ -60,25 +77,25 @@ function App() {
   const totalActiveInvestment = activeBizList.reduce((a, b) => a + Number(fixedInvestments[b]), 0);
 
   useEffect(() => {
-    fetchTransactions()
-  }, [])
+    fetchTransactions();
+  }, []);
 
   const fetchTransactions = async () => {
     try {
-      const res = await axios.get(API_URL)
-      setTransactions(res.data)
+      const res = await axios.get(API_URL);
+      setTransactions(res.data);
     } catch (error) {
-      console.error("Error fetching data:", error)
+      console.error("Error fetching data:", error);
     }
-  }
+  };
 
   const handleChange = (e) => {
     let { name, value } = e.target;
     if (name === 'title' && value.length > 0) {
       value = value.charAt(0).toUpperCase() + value.slice(1);
     }
-    setFormData({ ...formData, [name]: value })
-  }
+    setFormData({ ...formData, [name]: value });
+  };
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -90,10 +107,10 @@ function App() {
       source: tab === 'personal' ? 'Personal' : (activeBizList[0] || ''),
       date: ''
     });
-  }
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     const isGeneralExpense = activeTab === 'business' && bizRecordType === 'Expense';
 
@@ -113,11 +130,11 @@ function App() {
           ? (isGeneralExpense ? GENERAL_EXPENSE : formData.source)
           : 'Personal',
         title: activeTab === 'business'
-          ? (isGeneralExpense ? formData.title : `${formData.source} - ${bizRecordType}`)
+          ? (isGeneralExpense ? formData.title : `${formData.source} ${bizRecordType}`)
           : formData.title
       };
 
-      await axios.post(API_URL, submitData)
+      await axios.post(API_URL, submitData);
 
       const defaultSource = activeTab === 'personal'
         ? 'Personal'
@@ -129,22 +146,22 @@ function App() {
         type: activeTab === 'personal' ? 'expense' : 'income', 
         source: defaultSource, 
         date: '' 
-      })
+      });
       setBizRecordType('Profit');
-      fetchTransactions()
+      fetchTransactions();
     } catch (error) {
-      console.error("Error adding data:", error)
+      console.error("Error adding data:", error);
     }
-  }
+  };
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API_URL}/${id}`)
-      fetchTransactions()
+      await axios.delete(`${API_URL}/${id}`);
+      fetchTransactions();
     } catch (error) {
-      console.error("Error deleting data:", error)
+      console.error("Error deleting data:", error);
     }
-  }
+  };
 
   const handleAddBusiness = (e) => {
     e.preventDefault();
@@ -172,11 +189,25 @@ function App() {
     }
   };
 
+  const handlePermanentDelete = (bizName) => {
+    if (window.confirm(`Are you sure you want to permanently delete '${bizName}'?`)) {
+      const newInvestments = { ...fixedInvestments };
+      delete newInvestments[bizName];
+      setFixedInvestments(newInvestments);
+      setClosedBusinesses(closedBusinesses.filter(b => b !== bizName));
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const [year, month, day] = dateString.split('-');
     const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    navigate('/login');
   };
 
   const personalTx = transactions.filter(t => t.source === 'Personal' || !t.source);
@@ -194,13 +225,13 @@ function App() {
   const totalGeneralExpense = generalExpenseTx.reduce((acc, t) => acc + Number(t.amount), 0);
   const netBusinessProfit = totalBusinessProfit - totalGeneralExpense;
 
+  // ইনফিনিট লুপ ফিক্সড অ্যালার্ম
   useEffect(() => {
     if (activeTab !== 'personal') return;
 
-    // আইওএস সাপোর্ট এবং ব্রাউজার পলিসির জন্য .mp3 সাউন্ড ব্যবহার করা হলো
     const playSound = () => {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      audio.play().catch(err => console.log("Please click anywhere on the page to allow audio playback.", err));
+      audio.play().catch(err => console.log("Audio playback blocked by browser.", err));
     };
 
     if (expensePercentage >= 100 && !alertShown.hundred) {
@@ -213,10 +244,10 @@ function App() {
       setTimeout(() => { window.alert("⚠️ WARNING: You have reached 80% of your monthly budget!"); }, 500);
       setAlertShown(prev => ({ ...prev, eighty: true }));
     }
-    else if (expensePercentage < 80) {
+    else if (expensePercentage < 80 && (alertShown.eighty || alertShown.hundred)) {
       setAlertShown({ eighty: false, hundred: false });
     }
-  }, [expensePercentage, alertShown, activeTab]);
+  }, [expensePercentage, activeTab]);
 
   const displayTransactions = activeTab === 'personal'
     ? [...personalTx].sort((a, b) => b.id - a.id)
@@ -224,7 +255,12 @@ function App() {
 
   return (
     <div className="container">
-      <h2>Finance Tracker</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2>Finance Tracker</h2>
+        <button onClick={handleLogout} style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer' }}>
+          Logout
+        </button>
+      </div>
 
       <div className="tabs">
         <button className={`tab-btn ${activeTab === 'personal' ? 'active' : ''}`} onClick={() => handleTabChange('personal')}>
@@ -245,7 +281,7 @@ function App() {
             <div className="summary">
               <div className="summary-item expense-box" style={{ width: '100%' }}>
                 <h5>Total Expense</h5>
-                <p>- ৳{personalExpense}</p>
+                <p>৳{personalExpense}</p>
               </div>
             </div>
           </div>
@@ -278,7 +314,7 @@ function App() {
               </div>
               <div className="summary-item expense-box">
                 <h5>General Expenses</h5>
-                <p>- ৳{totalGeneralExpense}</p>
+                <p>৳{totalGeneralExpense}</p>
               </div>
             </div>
           </div>
@@ -309,10 +345,15 @@ function App() {
 
               return (
                 <div key={source} className="biz-card" style={{ position: 'relative' }}>
-                  <button onClick={() => toggleBusinessStatus(source)} style={{ position: 'absolute', top: '10px', right: '10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', fontSize: '10px', padding: '4px 8px', cursor: 'pointer' }}>
-                    Withdraw
-                  </button>
-                  <h6 style={{ fontSize: '14px', fontWeight: 'bold', paddingRight: '60px' }}>{source}</h6>
+                  <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <button onClick={() => toggleBusinessStatus(source)} style={{ background: '#f59e0b', color: 'white', border: 'none', borderRadius: '4px', fontSize: '10px', padding: '4px 8px', cursor: 'pointer' }}>
+                      Withdraw
+                    </button>
+                    <button onClick={() => handlePermanentDelete(source)} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', fontSize: '10px', padding: '4px 8px', cursor: 'pointer' }}>
+                      Delete
+                    </button>
+                  </div>
+                  <h6 style={{ fontSize: '14px', fontWeight: 'bold', paddingRight: '70px' }}>{source}</h6>
                   <p style={{ margin: '5px 0', fontSize: '12px', color: '#64748b' }}>Investment: ৳{fixedInvestments[source]}</p>
                   <span style={{ color: bizProfit >= 0 ? '#10b981' : '#ef4444', display: 'block', marginTop: '5px' }}>
                     Net {bizProfit >= 0 ? 'Profit' : 'Loss'}: ৳{Math.abs(bizProfit)}
@@ -335,10 +376,15 @@ function App() {
 
                   return (
                     <div key={source} className="biz-card" style={{ position: 'relative', backgroundColor: '#f1f5f9' }}>
-                      <button onClick={() => toggleBusinessStatus(source)} style={{ position: 'absolute', top: '10px', right: '10px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontSize: '10px', padding: '4px 8px', cursor: 'pointer' }}>
-                        Restore
-                      </button>
-                      <h6 style={{ fontSize: '14px', fontWeight: 'bold', paddingRight: '50px', color: '#475569', textDecoration: 'line-through' }}>{source}</h6>
+                      <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <button onClick={() => toggleBusinessStatus(source)} style={{ background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontSize: '10px', padding: '4px 8px', cursor: 'pointer' }}>
+                          Restore
+                        </button>
+                        <button onClick={() => handlePermanentDelete(source)} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', fontSize: '10px', padding: '4px 8px', cursor: 'pointer' }}>
+                          Delete
+                        </button>
+                      </div>
+                      <h6 style={{ fontSize: '14px', fontWeight: 'bold', paddingRight: '70px', color: '#475569', textDecoration: 'line-through' }}>{source}</h6>
                       <p style={{ margin: '5px 0', fontSize: '12px', color: '#94a3b8' }}>Past Invested: ৳{fixedInvestments[source]}</p>
                       <span style={{ color: bizProfit >= 0 ? '#64748b' : '#ef4444', display: 'block', marginTop: '5px' }}>
                         Net {bizProfit >= 0 ? 'Profit' : 'Loss'}: ৳{Math.abs(bizProfit)}
@@ -413,7 +459,18 @@ function App() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+function App() {
+  return (
+    <Router basename="/financetracker">
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+      </Routes>
+    </Router>
+  );
+}
+export default App;

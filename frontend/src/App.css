@@ -12,12 +12,12 @@ body {
 
 .container {
   background: #ffffff;
-  width: 100%;
-  min-width: 450px;
+  width: 92%;
   max-width: 500px;
-  padding: 30px;
+  padding: 20px;
   border-radius: 16px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
 }
 
 h2 {
@@ -257,6 +257,7 @@ button[type="submit"]:active { transform: scale(0.98); }
   color: #b91c1c;
   border: 1px solid #fecaca;
 }
+
 /* Tabs CSS */
 .tabs {
   display: flex;
@@ -264,6 +265,7 @@ button[type="submit"]:active { transform: scale(0.98); }
   gap: 15px;
   margin-bottom: 25px;
 }
+
 .tab-btn {
   padding: 12px 25px;
   border: none;
@@ -275,9 +277,11 @@ button[type="submit"]:active { transform: scale(0.98); }
   color: #64748b;
   transition: all 0.3s ease;
 }
+
 .tab-btn:hover {
   background-color: #e2e8f0;
 }
+
 .tab-btn.active {
   background-color: #3b82f6;
   color: white;
@@ -291,6 +295,7 @@ button[type="submit"]:active { transform: scale(0.98); }
   gap: 12px;
   margin-bottom: 25px;
 }
+
 .biz-card {
   background: #f8fafc;
   padding: 12px;
@@ -298,12 +303,27 @@ button[type="submit"]:active { transform: scale(0.98); }
   border-radius: 8px;
   text-align: left;
 }
+
 .biz-card h6 {
   margin: 0 0 5px 0;
   font-size: 13px;
   color: #475569;
 }
+
 .biz-card span {
   font-weight: 700;
   font-size: 16px;
+}
+
+/* Mobile Responsive CSS */
+@media (max-width: 480px) {
+  .summary {
+    flex-direction: column;
+  }
+  .biz-stats {
+    grid-template-columns: 1fr;
+  }
+  h2 {
+    font-size: 22px;
+  }
 }
